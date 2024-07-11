@@ -49,7 +49,6 @@ func MillisecondsToTimeStamp(milliseconds int64) string {
 	   3 -> milliseconds
 	*/
 
-
 	arrInt[0] = milliseconds / time.Hour.Milliseconds()
 	milliseconds -= arrInt[0] * time.Hour.Milliseconds()
 
@@ -64,4 +63,17 @@ func MillisecondsToTimeStamp(milliseconds int64) string {
 	timestamp := fmt.Sprintf("%02d:%02d:%02d,%03d", arrInt[0], arrInt[1], arrInt[2], arrInt[3])
 
 	return timestamp
+}
+
+func Includes(substr, str string) bool {
+	start := 0
+	end := len(substr)
+	for end < len(str) {
+		if str[start:end] == substr {
+			return true
+		}
+		start++
+		end++
+	}
+	return false
 }

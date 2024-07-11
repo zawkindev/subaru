@@ -19,7 +19,6 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		scanner.Bytes()
 		fmt.Println(scanner.Text())
 	}
 
