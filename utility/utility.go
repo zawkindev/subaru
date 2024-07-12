@@ -2,6 +2,7 @@ package utility
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -65,15 +66,23 @@ func MillisecondsToTimeStamp(milliseconds int64) string {
 	return timestamp
 }
 
-func Includes(substr, str string) bool {
+func Includes(substr, str string) (bool, int) {
 	start := 0
 	end := len(substr)
 	for end < len(str) {
 		if str[start:end] == substr {
-			return true
+			return true, start
 		}
 		start++
 		end++
 	}
-	return false
+	return false, 0
+}
+
+func TimeShift(millisecond int64, timestamp string) string {
+	time, err := TimeStampToMilliseconds(timestamp)
+	if err!=nil{
+		log.Fatal(err)
+	}
+	 return MillisecondsToTimeStamp(time+millisecond)
 }
