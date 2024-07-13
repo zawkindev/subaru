@@ -1,12 +1,12 @@
 package main
 
 import (
-		u "subaru/utility"
+	u "subaru/utility"
 )
 
-const timeShift int64 = 1
-const filename = "luffy.srt"
-
 func main() {
-	u.TimeShift(filename, timeShift)
+	timeShift := 1
+	filename := "luffy.srt"
+
+	u.TimeShift(filename, int64(timeShift))
 }
