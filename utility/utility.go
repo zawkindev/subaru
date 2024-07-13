@@ -79,10 +79,10 @@ func Includes(substr, str string) (bool, int) {
 	return false, 0
 }
 
-func TimeShift(millisecond int64, timestamp string) string {
+func TimeShift(timestamp string, millisecond int64) string {
 	time, err := TimeStampToMilliseconds(timestamp)
-	if err!=nil{
+	if err != nil {
 		log.Fatal(err)
 	}
-	 return MillisecondsToTimeStamp(time+millisecond)
+	return MillisecondsToTimeStamp(time + millisecond)
 }
