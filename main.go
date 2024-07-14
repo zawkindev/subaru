@@ -5,7 +5,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"subaru/utility"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -33,17 +35,41 @@ func main() {
 	u.Timeout = 60
 
 	updates := bot.GetUpdatesChan(u)
-
+	shiftingMode := false
+	fileName := ""
 	for update := range updates {
 		msg := update.Message
 		if msg != nil {
 			if msg.IsCommand() {
 				handleStartCmd(bot, msg)
+
 			} else if msg.Document != nil {
 				handleDocument(bot, msg)
-			} else if msg.IsCommand() == false {
-				message := tgbotapi.NewMessage(msg.Chat.ID, "It is not subtitle file. Try again")
+				message := tgbotapi.NewMessage(msg.Chat.ID, "Ok, now send the time to timeshift in seconds.\ne.g.\n1 -> for shifting 1s\n-1 -> for shifting 1s back.")
 				bot.Send(message)
+				shiftingMode = true
+				fileName = msg.Document.FileName
+
+			} else if msg.IsCommand() == false {
+				if shiftingMode {
+					seconds, err := strconv.Atoi(strings.TrimSpace(msg.Text))
+					if err != nil {
+						log.Printf("Error converting string to int: %v", err)
+						message := tgbotapi.NewMessage(msg.Chat.ID, "Invalid number format. Please send an integer.")
+						bot.Send(message)
+						continue
+					}
+
+					utility.TimeShift(fileName, int64(seconds))
+
+					if err = sendFile(bot, msg, fileName); err != nil {
+						log.Fatal(err)
+					}
+
+				} else {
+					message := tgbotapi.NewMessage(msg.Chat.ID, "It is not subtitle file. Try again")
+					bot.Send(message)
+				}
 			}
 		}
 	}
@@ -55,7 +81,7 @@ func handleStartCmd(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	bot.Send(msg)
 }
 
-func handleDocument(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func handleDocument(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 	fileID := message.Document.FileID
 	fileName := message.Document.FileName
 	fileSize := message.Document.FileSize
@@ -68,24 +94,25 @@ func handleDocument(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		// Get the file
 		file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
 		if err != nil {
-			log.Printf("Error getting file URL: %s", err)
-			return
+			return err
 		}
 
 		fileURL := "https://api.telegram.org/file/bot" + bot.Token + "/" + file.FilePath
 
 		err = downloadFile(fileName, fileURL)
 		if err != nil {
-			log.Fatal(err)
-			return
+			return err
 		}
 
 		log.Println("file downloaded successfully")
+
 	} else {
 		txt := "It is not subtitle file. Try again"
 		msg := tgbotapi.NewMessage(message.Chat.ID, txt)
 		bot.Send(msg)
 	}
+
+	return nil
 }
 
 func downloadFile(fileName, fileURL string) error {
@@ -103,4 +130,24 @@ func downloadFile(fileName, fileURL string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func sendFile(bot *tgbotapi.BotAPI, message *tgbotapi.Message, fileName string) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	doc := tgbotapi.NewDocument(message.Chat.ID, tgbotapi.FileReader{
+		Name:   fileName,
+		Reader: file,
+	})
+
+	_, err = bot.Send(doc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
