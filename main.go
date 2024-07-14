@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
@@ -39,7 +40,10 @@ func main() {
 			if msg.IsCommand() {
 				handleStartCmd(bot, msg)
 			} else if msg.Document != nil {
-
+				handleDocument(bot, msg)
+			} else if msg.IsCommand() == false {
+				message := tgbotapi.NewMessage(msg.Chat.ID, "It is not subtitle file. Try again")
+				bot.Send(message)
 			}
 		}
 	}
@@ -55,18 +59,33 @@ func handleDocument(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	fileID := message.Document.FileID
 	fileName := message.Document.FileName
 	fileSize := message.Document.FileSize
+	fileMime := message.Document.MimeType
 
-	log.Printf("Received file: %s (ID: %s, Size: %v)", fileName, fileID, fileSize)
+	if fileMime == "application/x-subrip" || (fileMime == "text/plain" && strings.HasSuffix(fileName, ".srt")) {
 
-	// Get the file
-	file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
-	if err != nil {
-		log.Printf("Error getting file URL: %s", err)
-		return
+		log.Printf("Received file: %s (ID: %s, Size: %v)", fileName, fileID, fileSize)
+
+		// Get the file
+		file, err := bot.GetFile(tgbotapi.FileConfig{FileID: fileID})
+		if err != nil {
+			log.Printf("Error getting file URL: %s", err)
+			return
+		}
+
+		fileURL := "https://api.telegram.org/file/bot" + bot.Token + "/" + file.FilePath
+
+		err = downloadFile(fileName, fileURL)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+		log.Println("file downloaded successfully")
+	} else {
+		txt := "It is not subtitle file. Try again"
+		msg := tgbotapi.NewMessage(message.Chat.ID, txt)
+		bot.Send(msg)
 	}
-
-	fileURL := "https://api.telegram.org/file/bot" + bot.Token + "/" + file.FilePath
-
 }
 
 func downloadFile(fileName, fileURL string) error {
