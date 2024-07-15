@@ -38,11 +38,11 @@ func main() {
 		if msg != nil {
 			if msg.IsCommand() {
 				handleStartCmd(bot, msg)
-
 			} else if msg.Document != nil {
 				err := handleDocument(bot, msg)
 				if err != nil {
 					log.Println(err)
+					continue
 				}
 				message := tgbotapi.NewMessage(msg.Chat.ID, "Ok, now send the time to timeshift in seconds.\ne.g.\n1000 -> for shifting 1s\n-1000 -> for shifting 1s back.")
 				bot.Send(message)
@@ -75,6 +75,7 @@ func main() {
 
 				} else {
 					message := tgbotapi.NewMessage(msg.Chat.ID, "It is not subtitle file. Try again")
+					shiftingMode = false
 					bot.Send(message)
 				}
 			}
@@ -117,6 +118,7 @@ func handleDocument(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 		txt := "It is not subtitle file. Try again"
 		msg := tgbotapi.NewMessage(message.Chat.ID, txt)
 		bot.Send(msg)
+		return fmt.Errorf("not srt")
 	}
 
 	return nil
