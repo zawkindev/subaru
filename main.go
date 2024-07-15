@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -29,7 +30,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	bot.Debug = true
+	// bot.Debug = true
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -44,8 +45,11 @@ func main() {
 				handleStartCmd(bot, msg)
 
 			} else if msg.Document != nil {
-				handleDocument(bot, msg)
-				message := tgbotapi.NewMessage(msg.Chat.ID, "Ok, now send the time to timeshift in seconds.\ne.g.\n1 -> for shifting 1s\n-1 -> for shifting 1s back.")
+				err := handleDocument(bot, msg)
+				if err != nil {
+					log.Println(err)
+				}
+				message := tgbotapi.NewMessage(msg.Chat.ID, "Ok, now send the time to timeshift in seconds.\ne.g.\n1000 -> for shifting 1s\n-1000 -> for shifting 1s back.")
 				bot.Send(message)
 				shiftingMode = true
 				fileName = msg.Document.FileName
@@ -60,11 +64,19 @@ func main() {
 						continue
 					}
 
-					utility.TimeShift(fileName, int64(seconds))
+					utility.TimeShift(fileName, int64(seconds)) // error is HERE!!!!!!!!
 
 					if err = sendFile(bot, msg, fileName); err != nil {
 						log.Fatal(err)
 					}
+					shiftingMode = false
+
+					err = os.Remove(fileName)
+					if err != nil {
+						fmt.Println("Error:", err)
+						continue
+					}
+					fmt.Println("File removed successfully")
 
 				} else {
 					message := tgbotapi.NewMessage(msg.Chat.ID, "It is not subtitle file. Try again")

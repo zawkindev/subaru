@@ -89,7 +89,7 @@ func timeAdd(timestamp string, millisecond int64) string {
 	return millisecondsToTimeStamp(time + millisecond)
 }
 
-func TimeShift(filename string, timeShift int64){
+func TimeShift(filename string, timeShift int64) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -103,7 +103,7 @@ func TimeShift(filename string, timeShift int64){
 		yes, index := includes("-->", line)
 		if yes {
 			timestamp1 := line[0 : index-1]
-			timestamp2 := line[index+4 : len(line)]
+			timestamp2 := line[index+4:len(line)-1]
 
 			timestamp1 = timeAdd(timestamp1, timeShift)
 			timestamp2 = timeAdd(timestamp2, timeShift)
